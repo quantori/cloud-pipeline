@@ -808,7 +808,7 @@ export default class DataStorage extends React.Component {
           selectable: false
         });
       }
-      const getChildList = (item, versions) => {
+      const getChildList = (item, versions, sensitiveStorage) => {
         if (!versions || !this.showVersions) {
           return undefined;
         }
@@ -818,12 +818,13 @@ export default class DataStorage extends React.Component {
             childList.push({
               key: `${item.type}_${item.path}_${version}`,
               ...versions[version],
-              downloadable: item.type.toLowerCase() === 'file' && !versions[version].deleteMarker &&
-              (
-                !item.labels ||
-                !item.labels['StorageClass'] ||
-                item.labels['StorageClass'].toLowerCase() !== 'glacier'
-              ),
+              downloadable: item.type.toLowerCase() === 'file' &&
+                !versions[version].deleteMarker &&
+                (
+                  !item.labels ||
+                  !item.labels['StorageClass'] ||
+                  item.labels['StorageClass'].toLowerCase() !== 'glacier'
+                ),
               editable: versions[version].version === item.version &&
               roleModel.writeAllowed(this.props.info.value) &&
               !versions[version].deleteMarker,
@@ -847,6 +848,9 @@ export default class DataStorage extends React.Component {
         return childList;
       };
       let results = [];
+      const sensitiveStorage = this.props.info.loaded
+        ? this.props.info.value.sensitiveStorage
+        : false;
       if (this.props.storage.loaded) {
         results = this.props.storage.value.results || [];
       }
@@ -854,15 +858,16 @@ export default class DataStorage extends React.Component {
         return {
           key: `${i.type}_${i.path}`,
           ...i,
-          downloadable: i.type.toLowerCase() === 'file' && !i.deleteMarker &&
-          (
-            !i.labels ||
-            !i.labels['StorageClass'] ||
-            i.labels['StorageClass'].toLowerCase() !== 'glacier'
-          ),
+          downloadable: i.type.toLowerCase() === 'file' &&
+            !i.deleteMarker &&
+            (
+              !i.labels ||
+              !i.labels['StorageClass'] ||
+              i.labels['StorageClass'].toLowerCase() !== 'glacier'
+            ),
           editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
           deletable: roleModel.writeAllowed(this.props.info.value),
-          children: getChildList(i, i.versions),
+          children: getChildList(i, i.versions, sensitiveStorage),
           selectable: !i.deleteMarker,
           miew: !i.deleteMarker &&
                 i.type.toLowerCase() === 'file' &&
@@ -1035,6 +1040,9 @@ export default class DataStorage extends React.Component {
   };
 
   get bulkDownloadEnabled () {
+    if (this.props.info.loaded && this.props.info.value.sensitiveStorage) {
+      return false;
+    }
     const selectedItemsLength = this.state.selectedItems.length;
     const downloadableSelectedItemsLength = this.state.selectedItems
       .filter(item => item.downloadable).length;
@@ -1147,6 +1155,8 @@ export default class DataStorage extends React.Component {
     }
     let contents;
     if (!this.props.storage.error) {
+      // todo: sensitive storage rules
+      // const sensitiveStorage = this.props.info.value.sensitiveStorage;
       const table = this.getStorageItemsTable();
       const folderKey = 'folder';
       const fileKey = 'file';
@@ -1262,17 +1272,19 @@ export default class DataStorage extends React.Component {
                 </Dropdown>
               }
               {
-                roleModel.writeAllowed(this.props.info.value) &&
-                <UploadButton
-                  multiple={true}
-                  onRefresh={this.refreshList}
-                  title={'Upload'}
-                  storageId={this.props.storageId}
-                  path={this.props.path}
-                  // synchronous
-                  uploadToS3={this.props.info.value.type === 'S3'}
-                  uploadToNFS={this.props.info.value.type === 'NFS'}
-                  action={DataStorageItemUpdate.uploadUrl(this.props.storageId, this.props.path)} />
+                roleModel.writeAllowed(this.props.info.value) && (
+                  <UploadButton
+                    multiple
+                    onRefresh={this.refreshList}
+                    title={'Upload'}
+                    storageId={this.props.storageId}
+                    path={this.props.path}
+                    // synchronous
+                    uploadToS3={this.props.info.value.type === 'S3'}
+                    uploadToNFS={this.props.info.value.type === 'NFS'}
+                    action={DataStorageItemUpdate.uploadUrl(this.props.storageId, this.props.path)}
+                  />
+                )
               }
             </div>
           </Row>
