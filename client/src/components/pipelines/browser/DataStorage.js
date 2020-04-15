@@ -820,6 +820,7 @@ export default class DataStorage extends React.Component {
               ...versions[version],
               downloadable: item.type.toLowerCase() === 'file' &&
                 !versions[version].deleteMarker &&
+                !sensitiveStorage &&
                 (
                   !item.labels ||
                   !item.labels['StorageClass'] ||
