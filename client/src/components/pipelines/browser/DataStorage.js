@@ -860,6 +860,7 @@ export default class DataStorage extends React.Component {
           ...i,
           downloadable: i.type.toLowerCase() === 'file' &&
             !i.deleteMarker &&
+            !sensitiveStorage &&
             (
               !i.labels ||
               !i.labels['StorageClass'] ||
@@ -1482,6 +1483,7 @@ export default class DataStorage extends React.Component {
             <Metadata
               key={METADATA_PANEL_KEY}
               readOnly={!roleModel.isOwner(this.props.info.value)}
+              downloadable={!this.props.info.value.sensitiveStorage}
               hideMetadataTags={this.props.info.value.type === 'NFS'}
               canNavigateBack={!!this.state.selectedFile}
               onNavigateBack={() => this.setState({selectedFile: null})}
@@ -1664,6 +1666,7 @@ export default class DataStorage extends React.Component {
         </Modal>
         <DataStorageCodeForm
           file={this.state.editFile}
+          downloadable={!this.props.info.value.sensitiveStorage}
           storageId={this.props.storageId}
           cancel={this.closeEditFileForm}
           save={this.saveEditableFile} />
